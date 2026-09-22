@@ -8,7 +8,7 @@ use rmcp::{
         router::tool::ToolRouter,
         wrapper::{Json, Parameters},
     },
-    model::{ServerCapabilities, ServerConfig},
+    model::{Implementation, ServerCapabilities, ServerConfig},
     schemars, tool, tool_handler, tool_router,
     transport::stdio,
 };
@@ -222,10 +222,13 @@ impl OpenCutServer {
 #[tool_handler]
 impl ServerHandler for OpenCutServer {
     fn get_info(&self) -> ServerConfig {
-        ServerConfig::new(ServerCapabilities::builder().enable_tools().build()).with_instructions(
-            "Edit a video project: new_project, import_clip, trim_clip, remove_clip, reorder_clip, \
-             get_project, export_project. One project is open at a time; new_project replaces it.",
-        )
+        ServerConfig::new(ServerCapabilities::builder().enable_tools().build())
+            .with_instructions(
+                "Edit a video project: new_project, import_clip, trim_clip, remove_clip, \
+                 reorder_clip, get_project, export_project. One project is open at a time; \
+                 new_project replaces it.",
+            )
+            .with_server_info(Implementation::new("opencut", env!("CARGO_PKG_VERSION")))
     }
 }
 
