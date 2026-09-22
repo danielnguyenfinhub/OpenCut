@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "opencut": {
+      "command": "C:\\Users\\Daniel\\OpenCut\\target\\debug\\opencut-mcp.exe"
+    }
+  }
+}
