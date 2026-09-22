@@ -2,7 +2,7 @@
 resolver = "3"
 members = [
   'apps/desktop',
-  # 'crates/*',
+  'crates/*',
 ]
 
 [workspace.package]
@@ -12,3 +12,6 @@ license = "MIT"
 
 [workspace.dependencies]
 gpui = "0.2.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4", "serde"] }

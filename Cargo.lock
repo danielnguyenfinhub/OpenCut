@@ -3568,6 +3568,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "opencut-core"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "uuid",
+]
+
+[[package]]
 name = "opencut-desktop"
 version = "0.1.0"
 dependencies = [
