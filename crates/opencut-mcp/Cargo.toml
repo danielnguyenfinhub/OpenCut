@@ -11,10 +11,11 @@ path = "src/main.rs"
 
 [dependencies]
 opencut-core = { path = "../opencut-core" }
-rmcp = { version = "3.4.0", features = ["server", "transport-io", "schemars"] }
+rmcp = { version = "3.4.0", features = ["server", "transport-io", "transport-streamable-http-server", "schemars"] }
+axum = "0.8"
 schemars = { workspace = true }
 serde = { workspace = true }
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "io-std"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "io-std", "net"] }
 anyhow = "1"
 
 [dev-dependencies]

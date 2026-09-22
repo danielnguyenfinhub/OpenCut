@@ -10,7 +10,12 @@ use rmcp::{
     },
     model::{Implementation, ServerCapabilities, ServerConfig},
     schemars, tool, tool_handler, tool_router,
-    transport::stdio,
+    transport::{
+        stdio,
+        streamable_http_server::{
+            StreamableHttpServerConfig, StreamableHttpService, session::local::LocalSessionManager,
+        },
+    },
 };
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
@@ -232,9 +237,96 @@ impl ServerHandler for OpenCutServer {
     }
 }
 
+/// Checks the `Authorization: Bearer <token>` header against the token this
+/// server was started with. The MCP tool layer has no auth concept of its
+/// own; this is the only thing standing between the public internet and
+/// export_project once this binary runs as a hosted HTTP service.
+///
+/// ponytail: verified manually with curl (no-token, wrong-token, correct-token
+/// -> 401/401/200), not by an automated test. Add a reqwest-based test
+/// alongside smoke.rs's stdio one before this ever carries real traffic.
+async fn require_bearer_token(
+    axum::extract::State(expected_token): axum::extract::State<Arc<str>>,
+    headers: axum::http::HeaderMap,
+    request: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> Result<axum::response::Response, axum::http::StatusCode> {
+    let provided = headers
+        .get(axum::http::header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.strip_prefix("Bearer "));
+    if provided == Some(&*expected_token) {
+        Ok(next.run(request).await)
+    } else {
+        Err(axum::http::StatusCode::UNAUTHORIZED)
+    }
+}
+
+/// Serves over Streamable HTTP with bearer-token auth, for hosts (Cowork,
+/// or any MCP client without a way to spawn a local process) that cannot
+/// reach a stdio server on this machine.
+async fn serve_http() -> anyhow::Result<()> {
+    let token: Arc<str> = std::env::var("OPENCUT_MCP_BEARER_TOKEN")
+        .map_err(|_| {
+            anyhow::anyhow!(
+                "OPENCUT_MCP_TRANSPORT=http requires OPENCUT_MCP_BEARER_TOKEN to be set. \
+                 Generate one and set it as an env var on both this server and every client \
+                 that calls it."
+            )
+        })?
+        .into();
+    let port: u16 = std::env::var("OPENCUT_MCP_PORT")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(8090);
+    // Empty by default: StreamableHttpServerConfig's own default (loopback
+    // only) still applies, so a bare `cargo run` stays safe. Set this once
+    // the service has a real public hostname (see Cargo.toml / README for
+    // where Railway reports it).
+    let allowed_hosts: Vec<String> = std::env::var("OPENCUT_MCP_ALLOWED_HOSTS")
+        .map(|value| {
+            value
+                .split(',')
+                .map(|host| host.trim().to_string())
+                .filter(|host| !host.is_empty())
+                .collect()
+        })
+        .unwrap_or_default();
+
+    let mut config = StreamableHttpServerConfig::default();
+    if !allowed_hosts.is_empty() {
+        config.allowed_hosts = allowed_hosts;
+    }
+
+    let mcp_service: StreamableHttpService<OpenCutServer, LocalSessionManager> =
+        StreamableHttpService::new(
+            || Ok(OpenCutServer::new()),
+            Arc::new(LocalSessionManager::default()),
+            config,
+        );
+
+    let router = axum::Router::new().nest_service("/mcp", mcp_service).layer(
+        axum::middleware::from_fn_with_state(token, require_bearer_token),
+    );
+
+    let listener = tokio::net::TcpListener::bind(("0.0.0.0", port)).await?;
+    eprintln!("opencut-mcp listening on :{port}/mcp (bearer token required)");
+    axum::serve(listener, router).await?;
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let service = OpenCutServer::new().serve(stdio()).await?;
-    service.waiting().await?;
-    Ok(())
+    let transport = std::env::var("OPENCUT_MCP_TRANSPORT").unwrap_or_else(|_| "stdio".to_string());
+    match transport.as_str() {
+        "http" => serve_http().await,
+        "stdio" => {
+            let service = OpenCutServer::new().serve(stdio()).await?;
+            service.waiting().await?;
+            Ok(())
+        }
+        other => {
+            anyhow::bail!("unknown OPENCUT_MCP_TRANSPORT {other:?}: expected \"stdio\" or \"http\"")
+        }
+    }
 }
