@@ -15,6 +15,7 @@ pub struct Clip {
     pub duration: f64,
     pub width: u32,
     pub height: u32,
+    pub has_audio: bool,
 }
 
 impl Clip {
@@ -27,6 +28,7 @@ impl Clip {
             duration: info.duration,
             width: info.width,
             height: info.height,
+            has_audio: info.has_audio,
         }
     }
 }
@@ -227,6 +229,7 @@ mod tests {
             duration,
             width: 1920,
             height: 1080,
+            has_audio: true,
         }
     }
 
