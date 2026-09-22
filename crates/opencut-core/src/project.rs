@@ -2,11 +2,12 @@ use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// A piece of imported media. `duration` is seconds and may be non-finite
 /// when the container does not declare a length, mirroring the web probe.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct Clip {
     pub id: String,
     pub name: String,
@@ -33,7 +34,7 @@ impl Clip {
 /// One clip's placement on the timeline: which clip, and which slice of it.
 /// Clips play in the order they appear in `Project::timeline`; there is no
 /// separate position field because reordering the list is reordering the cut.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct TimelineItem {
     pub clip_id: String,
     pub in_point: f64,

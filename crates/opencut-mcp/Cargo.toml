@@ -1,0 +1,21 @@
+[package]
+name = "opencut-mcp"
+description = "MCP server exposing OpenCut project editing as tools an agent can call"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "opencut-mcp"
+path = "src/main.rs"
+
+[dependencies]
+opencut-core = { path = "../opencut-core" }
+rmcp = { version = "3.4.0", features = ["server", "transport-io", "schemars"] }
+schemars = { workspace = true }
+serde = { workspace = true }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "io-std"] }
+anyhow = "1"
+
+[dev-dependencies]
+serde_json = { workspace = true }
