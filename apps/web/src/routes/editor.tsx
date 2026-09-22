@@ -1,12 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/editor')({ component: Editor })
+import { EditorShell } from '#/components/editor/editor-shell.tsx'
 
-function Editor() {
-  return (
-    <main>
-      <h1>Editor</h1>
-      <p>Coming soon.</p>
-    </main>
-  )
-}
+export const Route = createFileRoute('/editor')({
+  component: EditorShell,
+  head: () => ({ meta: [{ title: 'Editor | OpenCut' }] }),
+})
