@@ -8,3 +8,6 @@ docs/
 
 # moon runtime cache
 .moon/cache/
+
+# wrangler local dev cache (apps/web/.gitignore already ignores it; cover apps/api too)
+.wrangler/
